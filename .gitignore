@@ -1,0 +1,15 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pkl
+*.npy
+.DS_Store
+
+# Environment files
+.env
+*.log
+
+# IDE and OS junk
+.vscode/
+.idea/
