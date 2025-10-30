@@ -1,0 +1,22 @@
+# Core
+numpy
+pandas
+scikit-learn
+
+# Deep Learning
+tensorflow
+keras
+torch
+torchvision
+
+# Visualization
+matplotlib
+seaborn
+
+# Utilities
+tqdm
+jupyter
+
+# For packet capture (future real-time integration)
+scapy
+pyshark
