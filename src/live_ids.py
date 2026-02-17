@@ -5,6 +5,8 @@ import numpy as np
 import time
 from collections import deque, defaultdict
 from model_attn import CNN_BiLSTM_Attn_IDS
+from explainer import explain_alert
+
 
 # -------------------------
 # CONFIG (tune these)
@@ -17,8 +19,8 @@ DEVICE = torch.device("cpu")
 # Inference smoothing + thresholds
 PACKET_DELAY = 0.01        # pause between handling packets
 CONF_BUFFER_LEN = 8        # average over last N predictions
-ALERT_THRESHOLD = 0.85     # raise alert only if avg prob >= this
-MIN_ALERT_OCCURRENCES = 3  # require this many high-confidence sequences within window
+ALERT_THRESHOLD = 0.65     # raise alert only if avg prob >= this
+MIN_ALERT_OCCURRENCES = 2  # require this many high-confidence sequences within window
 ALERT_WINDOW_SEC = 8       # time window to count occurrences
 ALERT_COOLDOWN = 20        # seconds before repeating same alert for same pair
 
@@ -28,7 +30,7 @@ WHITELIST_IPS = {
     "140.82.112.21",       # (if you know these are benign) remove as needed
     # add IPs or subnets you trust
 }
-WHITELIST_PREFIXES = ("10.", "192.168.", "172.16.")  # local networks
+WHITELIST_PREFIXES = ()  # local networks
 
 # -------------------------
 # CAPTURE (point to tshark if on Windows)
@@ -195,13 +197,25 @@ try:
                 # check cooldown
                 last = last_alert_time.get(pair, 0)
                 if now - last >= ALERT_COOLDOWN:
+                   info = explain_alert(
+                       src_ip=src,
+                       dst_ip=dst,
+                       protocol=packet.highest_layer,
+                       confidence=avg_conf
+         )
                     # produce a human-friendly reason hint (simple heuristics)
-                    reason = "high-confidence pattern detected"
-                    # print human message
-                    print(human_alert_message(src, dst, avg_conf, reason))
-                    last_alert_time[pair] = now
-                    # optional: write to file or call teammate webhook here
+                   info = explain_alert(src_ip=src,dst_ip=dst,protocol=packet.highest_layer,confidence=avg_conf)
+                   print("\n[🚨 INTRUSION ALERT 🚨]")
+                   print(f"Time       : {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
+                   print(f"Source     : {src}")
+                   print(f"Destination: {dst}")
+                   print(f"Protocol   : {packet.highest_layer}")
+                   print(f"Severity   : {info['severity']}")
+                   print(f"Reason     : {info['explanation']}")
+                   print(f"Action     : {info['action']}")
+                   print("-" * 65)
 
+                   last_alert_time[pair] = now
                 # clear occurrences to avoid immediate repeat
                 pair_occurrences[pair].clear()
 
@@ -209,4 +223,9 @@ try:
         time.sleep(PACKET_DELAY)
 
 except KeyboardInterrupt:
-    print("\nLive capture stopped by user.")
+    print("\n[INFO] Live capture stopped by user.")
+finally:
+    try:
+        capture.close()
+    except:
+        pass
