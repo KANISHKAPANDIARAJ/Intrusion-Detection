@@ -1,5 +1,5 @@
 import socket
-
+import time 
 HOST = "0.0.0.0"   # listen on all interfaces
 PORT = 8080
 
@@ -11,5 +11,6 @@ print("[+] Victim server listening on port 8080")
 
 while True:
     conn, addr = s.accept()
-    print(f"[+] Connection from {addr}")
+    timestamp = time.time()
+    print(f"[{timestamp}] Connection from {addr[0]}:{addr[1]}")
     conn.close()

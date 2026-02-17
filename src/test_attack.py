@@ -1,10 +1,10 @@
 import socket
 import time
 
-target = "172.16.50.224"
+target = "127.0.0.1"
 port = 8080
 
-for i in range(200):
+for i in range(500):
     try:
         s = socket.socket()
         s.connect((target, port))
