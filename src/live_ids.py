@@ -6,7 +6,9 @@ from collections import deque, defaultdict
 from model_attn import CNN_BiLSTM_Attn_IDS
 from explainer import explain_alert
 import subprocess
-
+from ai_analyzer import analyze_packet
+import json
+import os
 # -------------------------
 # CONFIG
 # -------------------------
@@ -130,7 +132,7 @@ try:
 
         try:
             frame_no = packet.frame_info.number
-        except:
+        except Exception:
             frame_no = None
 
         src = packet.ip.src if hasattr(packet, "ip") else None
@@ -167,34 +169,48 @@ try:
             if len(pair_occurrences[pair]) >= MIN_ALERT_OCCURRENCES:
                 last = last_alert_time.get(pair, 0)
 
-                if now - last >= ALERT_COOLDOWN:
-                    info = explain_alert(
-                        src_ip=src,
-                        dst_ip=dst,
-                        protocol=packet.highest_layer,
-                        confidence=avg_conf
-                    )
+                info = analyze_packet(
+                    src_ip=src,
+                    dst_ip=dst,
+                    protocol=packet.highest_layer,
+                    confidence=avg_conf,
+                    frame_no=frame_no
+                )
+                os.makedirs("dashboard", exist_ok=True)
 
-                    print("\n[🚨 INTRUSION ALERT 🚨]")
-                    print(f"Time       : {time.strftime('%Y-%m-%d %H:%M:%S')}")
-                    print(f"Frame      : {frame_no}")
-                    print(f"Source     : {src}")
-                    print(f"Destination: {dst}")
-                    print(f"Protocol   : {packet.highest_layer}")
-                    print(f"Severity   : {info['severity']}")
-                    print(f"Reason     : {info['explanation']}")
-                    print(f"Action     : {info['action']}")
-                    print("-" * 60)
+                with open("dashboard/latest_alert.json", "w") as f:
+                    json.dump(info, f, indent=4)
 
-                    if frame_no:
-                        subprocess.Popen([
-                            r"D:\Wireshark\Wireshark.exe",
-                            "-Y",
-                            f"frame.number == {frame_no}"
-                        ])
+                print("\n[🚨 AI INTRUSION ALERT 🚨]")
+                print("=" * 60)
 
-                    last_alert_time[pair] = now
-                    pair_occurrences[pair].clear()
+                print(f"Time         : {info['timestamp']}")
+                print(f"Frame        : {info['frame']}")
+                print(f"Source       : {info['source']}")
+                print(f"Destination  : {info['destination']}")
+                print(f"Protocol     : {info['protocol']}")
+                print(f"Confidence   : {info['confidence']}%")
+                print(f"Severity     : {info['severity']}")
+
+                print("\nAI Analysis")
+                print("-" * 60)
+                print(info["reason"])
+
+                print("\nRecommendation")
+                print("-" * 60)
+                print(info["action"])
+
+                print("=" * 60)
+
+#                if frame_no:
+#                   subprocess.Popen([
+#                            r"C:\Program Files\Wireshark\Wireshark.exe",
+#                           "-Y",
+#                           f"frame.number == {frame_no}"
+#                   ])
+
+                last_alert_time[pair] = now
+                pair_occurrences[pair].clear()
 
         time.sleep(PACKET_DELAY)
 
