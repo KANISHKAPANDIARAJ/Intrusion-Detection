@@ -1,22 +1,17 @@
-# Core
-numpy
-pandas
-scikit-learn
+numpy==2.3.3
+pandas==2.3.2
+scikit-learn==1.7.2
+scipy==1.16.2
 
-# Deep Learning
-tensorflow
-keras
-torch
-torchvision
+torch==2.8.0
 
-# Visualization
-matplotlib
-seaborn
+pyshark==0.6
 
-# Utilities
-tqdm
-jupyter
+requests==2.32.5
+python-dotenv==1.2.2
 
-# For packet capture (future real-time integration)
-scapy
-pyshark
+streamlit
+matplotlib==3.10.6
+seaborn==0.13.2
+
+tqdm==4.67.1
